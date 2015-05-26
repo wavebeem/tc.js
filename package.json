@@ -1,0 +1,12 @@
+{
+  "name": "tc",
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "mocha": "^2.2.5"
+  }
+}

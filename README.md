@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/saikobee/tc.js.svg?branch=master)](https://travis-ci.org/saikobee/tc.js)
+[![Dependency Status](https://david-dm.org/username/repo.svg)](https://david-dm.org/saikobee/tc.js)]
 
 # Purpose
 

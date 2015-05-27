@@ -22,6 +22,10 @@ describe("tc.js", function() {
             .Takes([TC.Array(TC.Number)])
             .Returns(TC.Number)
             .By(function(xs) { return xs.reduce(add, 0) })
+        // var myParseInt = TC()
+        //     .Takes([TC.String, TC.Optional(TC.Natural)])
+        //     .Returns(TC.Integer)
+        //     .By(parseInt)
         var charCount = TC()
             .Takes([TC.String])
             .Returns(TC.Object(TC.Number))
@@ -41,6 +45,7 @@ describe("tc.js", function() {
             assert.throws(function() { add(1, "2") })
             assert.throws(function() { sum([1, 2, "3"]) })
             assert.throws(function() { divide(1, 0) })
+            // assert.doesNotThrow(function() { myParseInt('10', 16) })
         })
         it("should check return type", function() {
             assert.throws(function() { add(1, "2") })

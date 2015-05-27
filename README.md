@@ -14,6 +14,55 @@ If you want to use TC in a browser environment, try bundling it with
 The API here is not final. The name is also not final. I don't intend to put
 this on npm until I've come up with a better name.
 
+# TODO
+
+- Type "and":
+```javascript
+// Needs example use case...
+```
+- Better error messages
+  Maybe something like `T.tcName` falling back to `T.name`
+- Solidified API for type checkers
+
+Type "or":
+
+```javascript
+var NOrS = TC.Or([TC.Number, TC.String])
+var add = TC()
+    .Takes([NOrS, NOrS])
+    .Returns(TC.String)
+    .By(function(a, b) { return a + b })
+```
+
+`TC.Integer`, `TC.Real`...
+
+`TC.Struct`:
+
+```javascript
+var TPoint = TC.Struct({
+    x: TC.Number,
+    y: TC.Number,
+})
+var pointAdd = TC()
+    .Takes([TPoint, TPoint])
+    .Returns(TPoint)
+    .By(function(p1, p2) {
+        return {
+            x: p1.x + p2.x,
+            y: p2.y + p2.y,
+        }
+    })
+```
+
+Also you should be able to specify a function as a type like:
+
+```javascript
+TC.Function([T1, T2, ...Tn], T)
+```
+
+...and that will wrap the argument with `TC.wrap`, or if it's already been
+wrapped, throw if it has been wrapped with a different signature.
+
 # Example
 
 ```javascript

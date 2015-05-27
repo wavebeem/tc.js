@@ -33,34 +33,76 @@ TC.String = function(x) {
     return assertType(typeof x === "string", "String")
 }
 
-TC.Function = function(x) {
-    return assertType(typeof x === "function", "Function")
-}
+// TC.Function = function(x) {
+//     return assertType(typeof x === "function", "Function")
+// }
 
 TC.Boolean = function(x) {
     return assertType(typeof x === "boolean", "Boolean")
 }
 
-TC.Void = function(x) {
-    return assertType(x === null || x === undefined, "Void")
+TC.Undefined = function(x) {
+    return assertType(x === undefined, "Undefined")
 }
+
+TC.Null = function(x) {
+    return assertType(x === null, "Null")
+}
+
+TC.Or = function(ts) {
+    return function(x) {
+        var ok = ts.some(function(t) { return t(x) })
+        return assertType(ok, "Or<" + ts.map(H.show).join(', ') + ">")
+    }
+}
+
+TC.And = function(ts) {
+    return function(x) {
+        var ok = ts.every(function(t) { return t(x) })
+        return assertType(ok, "And<" + ts.map(H.show).join(', ') + ">")
+    }
+}
+
+TC.Optional = function(t) {
+    return TC.Or([TC.Undefined, t])
+}
+
+TC.Void = TC.Or([TC.Null, TC.Undefined])
 
 TC.Date = function(x) {
     return assertType(x instanceof Date, "Date")
 }
 
-TC.Type = TC.Function
-
-TC.Nonzero = function(x) {
-    return TC.Number(x) && assertType(x !== 0, "")
+TC.Type = function(x) {
+    return assertType(typeof x === 'function', "Type")
 }
 
-TC.Object = function(t) {
+TC.Nonzero = TC.And([TC.Number, function(x) {
+    return assertType(x !== 0, "Nonzero")
+}])
+
+TC.Integer = TC.And([TC.Number, function(x) {
+    return assertType(Math.floor(x) === x, "Integer")
+}])
+
+TC.Natural = TC.And([TC.Integer, function(x) {
+    return assertType(x >= 0, "Natural")
+}])
+
+TC.Map = function(t) {
     return function(x) {
         var ok = Object
             .keys(x)
             .every(H.safePredicate(function(k) { return t(x[k]) }))
-        return assertType(ok, "Object<" + H.show(t) + ">")
+        return assertType(ok, "Map<" + H.show(t) + ">")
+    }
+}
+
+TC.Object = function(o) {
+    o = Object.freeze(o)
+    return function(x) {
+        // TODO: Assert all types in `o` are valid in `x`
+        return true
     }
 }
 
@@ -71,9 +113,18 @@ TC.Any = function(x) {
 TC.Array = function(t) {
     return function(x) {
         // Make a non-sparse copy of the array.
-        x = Array.prototype.concat.apply(Array.prototype, x)
+        x = [].concat.apply([], x)
         var ok = x.every(H.safePredicate(t))
         return assertType(ok, "Array<" + H.show(t) + ">")
+    }
+}
+
+TC.Tuple = function(ts) {
+    return function(xs) {
+        var ok = xs
+            && xs.length === ts.length
+            && H.zipWith(H.throwOnFalse(H.call), ts, xs)
+        return assertType(ok, "Tuple<" + ts.map(H.show).join(', ') + ">")
     }
 }
 

@@ -4,9 +4,9 @@ var assert = require('chai').assert
 describe("tc.js", function() {
     describe("TC.Number()", function() {
         it("should assert its argument has typeof 'number'", function() {
-            assert.throws(function() { TC.Number("5") })
-            assert.doesNotThrow(function() { TC.Number(5) })
-            assert.doesNotThrow(function() { TC.Number(NaN) })
+            assert.strictEqual(TC.Number("5"), false)
+            assert.strictEqual(TC.Number(5), true)
+            assert.strictEqual(TC.Number(NaN), true)
         })
     })
     describe("TC()", function() {
@@ -28,8 +28,8 @@ describe("tc.js", function() {
         //     .By(parseInt)
         var charCount = TC()
             .Takes([TC.String])
-            .Returns(TC.Object(TC.Number))
-            .By(function(s) {
+            .Returns(TC.Map(null, TC.Number))
+            .By(function charCount(s) {
                 return s
                     .split('')
                     .reduce(function(obj, c) {
@@ -37,15 +37,15 @@ describe("tc.js", function() {
                         return obj
                     }, Object.create(null))
             })
-        var TPerson = TC.Object({
+        var TPerson = TC.Object(null, {
             name: TC.String,
             age: TC.Nonzero,
-            nickname: TC.Optional(TC.String),
+            nickname: TC.Optional(null, TC.String),
         })
         var personSummary = TC()
             .Takes([TPerson])
             .Returns(TC.String)
-            .By(function(p) {
+            .By(function personSummary(p) {
                 return p.name
                     + (p.nickname ? ('"' + p.nickname + '"') : '')
                     + '(' + p.age + ')'

@@ -50,17 +50,13 @@ H.assign(TC, {
     Or: function(name, ts) {
         name = name || showTypeParameters('TC.Or', ts)
         return TC.newType(name, function f(x) {
-            return ts
-                .map(H.safePredicate)
-                .some(function(t) { return t(x) })
+            return ts.some(function(t) { return t(x) })
         })
     },
     And: function(name, ts) {
         name = name || showTypeParameters('TC.And', ts)
         return TC.newType(name, function(x) {
-            return ts
-                .map(H.safePredicate)
-                .some(function(t) { return t(x) })
+            return ts.every(function(t) { return t(x) })
         })
     },
 })
@@ -158,7 +154,9 @@ TC.wrap = function(ts, t, f) {
             }
         })
         var x = f.apply(this, arguments)
-        H.throwOnFalse(t)(x)
+        if (!t(x)) {
+            throw new Error("return type failed: " + t)
+        }
         return x
     }
 }

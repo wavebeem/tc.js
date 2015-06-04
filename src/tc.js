@@ -25,11 +25,11 @@ function assertType(p, t) {
     return true
 }
 
-TC.Number = function(x) {
+TC.Number = function TC_Number(x) {
     return assertType(typeof x === "number", "Number")
 }
 
-TC.String = function(x) {
+TC.String = function TC_String(x) {
     return assertType(typeof x === "string", "String")
 }
 
@@ -37,7 +37,7 @@ TC.String = function(x) {
 //     return assertType(typeof x === "function", "Function")
 // }
 
-TC.Boolean = function(x) {
+TC.Boolean = function TC_Boolean(x) {
     return assertType(typeof x === "boolean", "Boolean")
 }
 
@@ -51,14 +51,18 @@ TC.Null = function(x) {
 
 TC.Or = function(ts) {
     return function(x) {
-        var ok = ts.some(function(t) { return t(x) })
+        var ok = ts
+            .map(H.safePredicate)
+            .some(function(t) { return t(x) })
         return assertType(ok, "Or<" + ts.map(H.show).join(', ') + ">")
     }
 }
 
 TC.And = function(ts) {
     return function(x) {
-        var ok = ts.every(function(t) { return t(x) })
+        var ok = ts
+            .map(H.safePredicate)
+            .every(function(t) { return t(x) })
         return assertType(ok, "And<" + ts.map(H.show).join(', ') + ">")
     }
 }
@@ -101,10 +105,31 @@ TC.Map = function(t) {
 TC.Object = function(o) {
     o = Object.freeze(o)
     return function(x) {
-        // TODO: Assert all types in `o` are valid in `x`
-        return true
+        return Object
+            .keys(o)
+            .every(function(k) {
+                return o[k](x[k])
+            })
     }
 }
+
+TC.Interface = function(name, o) {
+    o = Object.freeze(o)
+    function ret(x) {
+        var sameKeys =
+            Object.keys(o).sort().join('') ===
+            Object.keys(x).sort().join('')
+        var allTypesMatch = Object
+            .keys(o)
+            .every(function(k) {
+                return o[k](x[k])
+            })
+        return sameKeys && allTypesMatch
+    }
+    ret.__tcName__ = name
+    return ret
+}
+
 
 TC.Any = function(x) {
     return true
@@ -140,8 +165,24 @@ TC.wrap = function(ts, t, f) {
         if (args.length !== ts.length) {
             throw new Error("incorrect argument count")
         }
-        H.zipWith(H.throwOnFalse(H.call), ts, args)
-        var x = f.apply(null, arguments)
+        ts.forEach(function(t, i) {
+            var ok = true
+            try {
+                ok = t(args[i])
+            } catch(e) {
+                ok = false
+            }
+            if (ok === false) {
+                throw new Error(
+                    "argument " + (i + 1)
+                    + " (" + H.show(args[i]) + ")"
+                    + " was not a " + H.show(t)
+                    + " in parameters (" + ts.map(H.show).join(', ') + ")"
+                    + " of " + H.show(f)
+                )
+            }
+        })
+        var x = f.apply(this, arguments)
         H.throwOnFalse(t)(x)
         return x
     }

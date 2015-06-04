@@ -30,7 +30,7 @@ function safePredicate(f) {
 
 function throwOnFalse(f) {
     return function() {
-        var x = f.apply(null, arguments)
+        var x = f.apply(this, arguments)
         if (x === false) {
             throw new Error("Oops!")
         }
@@ -50,7 +50,7 @@ function toArray(xs) {
 
 function show(x) {
     if (x instanceof Array) {
-        var s = x.map(show).join(', ')
+        var s = x.map(basicShow).join(', ')
         return '[' + s + ']'
     }
     if (x && typeof x === 'object') {
@@ -58,14 +58,20 @@ function show(x) {
             .keys(x)
             .reduce(function(pairs, k) {
                 var v = x[k]
-                pairs.push(show(k) + ': ' + show(v))
+                pairs.push(basicShow(k) + ': ' + basicShow(v))
                 return pairs
             }, [])
             .join(', ')
         return '{' + s + '}'
     }
+    return basicShow(x)
+}
+
+function basicShow(x) {
     if (typeof x === 'function') {
-        return x.name || '[Function]'
+        var n = x.name || x.__tcName__
+        // return  n ? ('[Function: ' + n + ']') : '[Function]'
+        return  n || '[Function]'
     }
     if (x === undefined) {
         return '' + x

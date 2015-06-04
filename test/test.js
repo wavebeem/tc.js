@@ -37,6 +37,19 @@ describe("tc.js", function() {
                         return obj
                     }, Object.create(null))
             })
+        var TPerson = TC.Object({
+            name: TC.String,
+            age: TC.Nonzero,
+            nickname: TC.Optional(TC.String),
+        })
+        var personSummary = TC()
+            .Takes([TPerson])
+            .Returns(TC.String)
+            .By(function(p) {
+                return p.name
+                    + (p.nickname ? ('"' + p.nickname + '"') : '')
+                    + '(' + p.age + ')'
+            })
         it("should check arity", function() {
             assert.throws(function() { add(1) })
             assert.throws(function() { sum([1, 2, "3"]) })
@@ -45,6 +58,20 @@ describe("tc.js", function() {
             assert.throws(function() { add(1, "2") })
             assert.throws(function() { sum([1, 2, "3"]) })
             assert.throws(function() { divide(1, 0) })
+            assert.throws(function() { personSummary({}) })
+            assert.doesNotThrow(function() {
+                personSummary({
+                    name: "Brian",
+                    age: 25,
+                })
+            })
+            assert.doesNotThrow(function() {
+                personSummary({
+                    name: "Potato",
+                    age: 46,
+                    nickname: "The Potato"
+                })
+            })
             // assert.doesNotThrow(function() { myParseInt('10', 16) })
         })
         it("should check return type", function() {

@@ -18,6 +18,8 @@ function TC(self) {
     }
 }
 
+TC.newType = H.newType
+
 function assertType(p, t) {
     if (!p) {
         throw new Error("not a(n) " + t)
@@ -25,136 +27,109 @@ function assertType(p, t) {
     return true
 }
 
-TC.Number = function TC_Number(x) {
-    return assertType(typeof x === "number", "Number")
+function installType(name, predicate) {
+    TC[name] = TC.newType('TC.' + name, predicate)
 }
 
-TC.String = function TC_String(x) {
-    return assertType(typeof x === "string", "String")
+function showTypeParameters(s, ts) {
+    return s + '<' + ts.map(H.show).join(', ') + '>'
 }
 
-// TC.Function = function(x) {
-//     return assertType(typeof x === "function", "Function")
-// }
+H.eachKeyVal(installType, {
+    Any: function(x) { return true },
+    Number: function(x) { return typeof x === 'number' },
+    String: function(x) { return typeof x === 'string' },
+    Boolean: function(x) { return typeof x === 'boolean' },
+    Type: function(x) { return typeof x === 'function' },
+    Date: function(x) { return x instanceof Date },
+    Undefined: function(x) { return x === undefined },
+    Null: function(x) { return x === null },
+})
 
-TC.Boolean = function TC_Boolean(x) {
-    return assertType(typeof x === "boolean", "Boolean")
-}
+H.assign(TC, {
+    Or: function(name, ts) {
+        name = name || showTypeParameters('TC.Or', ts)
+        return TC.newType(name, function f(x) {
+            return ts
+                .map(H.safePredicate)
+                .some(function(t) { return t(x) })
+        })
+    },
+    And: function(name, ts) {
+        name = name || showTypeParameters('TC.And', ts)
+        return TC.newType(name, function(x) {
+            return ts
+                .map(H.safePredicate)
+                .some(function(t) { return t(x) })
+        })
+    },
+})
 
-TC.Undefined = function(x) {
-    return assertType(x === undefined, "Undefined")
-}
+TC.Optional = function(name, t) { return TC.Or(name, [TC.Undefined, t]) }
 
-TC.Null = function(x) {
-    return assertType(x === null, "Null")
-}
+H.assign(TC, {
+    Void: TC.Or('TC.Void', [TC.Undefined, TC.Null]),
+    Nonzero: TC.And('TC.Nonzero', [TC.Number, function(x) {
+        return x !== 0
+    }]),
+    Integer: TC.And('TC.Integer', [TC.Number, function(x) {
+        return Math.floor(x) === x
+    }]),
+})
 
-TC.Or = function(ts) {
-    return function(x) {
-        var ok = ts
-            .map(H.safePredicate)
-            .some(function(t) { return t(x) })
-        return assertType(ok, "Or<" + ts.map(H.show).join(', ') + ">")
-    }
-}
-
-TC.And = function(ts) {
-    return function(x) {
-        var ok = ts
-            .map(H.safePredicate)
-            .every(function(t) { return t(x) })
-        return assertType(ok, "And<" + ts.map(H.show).join(', ') + ">")
-    }
-}
-
-TC.Optional = function(t) {
-    return TC.Or([TC.Undefined, t])
-}
-
-TC.Void = TC.Or([TC.Null, TC.Undefined])
-
-TC.Date = function(x) {
-    return assertType(x instanceof Date, "Date")
-}
-
-TC.Type = function(x) {
-    return assertType(typeof x === 'function', "Type")
-}
-
-TC.Nonzero = TC.And([TC.Number, function(x) {
-    return assertType(x !== 0, "Nonzero")
+TC.Natural = TC.And('TC.Natural', [TC.Integer, function(x) {
+    return x >= 0
 }])
 
-TC.Integer = TC.And([TC.Number, function(x) {
-    return assertType(Math.floor(x) === x, "Integer")
-}])
-
-TC.Natural = TC.And([TC.Integer, function(x) {
-    return assertType(x >= 0, "Natural")
-}])
-
-TC.Map = function(t) {
-    return function(x) {
-        var ok = Object
-            .keys(x)
-            .every(H.safePredicate(function(k) { return t(x[k]) }))
-        return assertType(ok, "Map<" + H.show(t) + ">")
-    }
-}
-
-TC.Object = function(o) {
-    o = Object.freeze(o)
-    return function(x) {
+TC.Map = function(name, t) {
+    name = name || showTypeParameters('TC.Map', [t])
+    return TC.newType(name, function(x) {
         return Object
-            .keys(o)
-            .every(function(k) {
-                return o[k](x[k])
-            })
-    }
+            .keys(x)
+            .every(function(k) { return t(x[k]) })
+    })
+}
+
+TC.Object = function(name, o) {
+    o = Object.freeze(o)
+    var ks = Object.keys(o)
+    name = name || showTypeParameters('TC.Object', ks)
+    return TC.newType(name, function(x) {
+        return ks.every(function(k) { return o[k](x[k]) })
+    })
 }
 
 TC.Interface = function(name, o) {
     o = Object.freeze(o)
-    function ret(x) {
-        var sameKeys =
-            Object.keys(o).sort().join('') ===
-            Object.keys(x).sort().join('')
-        var allTypesMatch = Object
-            .keys(o)
-            .every(function(k) {
-                return o[k](x[k])
-            })
-        return sameKeys && allTypesMatch
-    }
-    ret.__tcName__ = name
-    return ret
+    var ks = Object.keys(o)
+    name = name || showTypeParameters('TC.Interface', ks)
+    return TC.newType(name, function(x) {
+        return H.sameKeys(o, x) &&
+            ks.every(function(k) { return o[k](x[k]) })
+    })
 }
 
-
-TC.Any = function(x) {
-    return true
-}
-
-TC.Array = function(t) {
-    return function(x) {
+TC.Array = function(name, t) {
+    name = name || showTypeParameters('TC.Array', [t])
+    return TC.newType(name, function(x) {
         // Make a non-sparse copy of the array.
         x = [].concat.apply([], x)
-        var ok = x.every(H.safePredicate(t))
-        return assertType(ok, "Array<" + H.show(t) + ">")
-    }
+        return x.every(t)
+    })
 }
 
-TC.Tuple = function(ts) {
-    return function(xs) {
-        var ok = xs
+TC.Tuple = function(name, ts) {
+    ts = Object.freeze(ts)
+    name = name || showTypeParameters('TC.Tuple', ts)
+    return TC.newType(name, function(xs) {
+        return xs
             && xs.length === ts.length
-            && H.zipWith(H.throwOnFalse(H.call), ts, xs)
-        return assertType(ok, "Tuple<" + ts.map(H.show).join(', ') + ">")
-    }
+            && H.zipWith(H.call, ts, xs)
+    })
 }
 
 TC.wrap = function(ts, t, f) {
-    if (!TC.Array(TC.Type)(ts)) {
+    if (!TC.Array(null, TC.Type)(ts)) {
         throw new Error("TC-wrapped function did not specify input types")
     }
     if (!TC.Type(t)) {

@@ -14,8 +14,25 @@ function zipWith(f, xs, ys) {
     return xys
 }
 
+function eachKeyVal(f, obj) {
+    for (var k in obj) {
+        f(k, obj[k])
+    }
+}
+
+function assign(dst, src) {
+    for (var k in src) {
+        dst[k] = src[k]
+    }
+}
+
 function call(f, x) {
     return f(x)
+}
+
+function sameKeys(x, y) {
+    return Object.keys(x).sort().join('') ===
+           Object.keys(y).sort().join('')
 }
 
 function safePredicate(f) {
@@ -79,6 +96,12 @@ function basicShow(x) {
     return JSON.stringify(x)
 }
 
+function newType(name, predicate) {
+    var f = safePredicate(predicate)
+    f.__tcName__ = name
+    return f
+}
+
 module.exports = {
     zipWith: zipWith,
     call: call,
@@ -87,4 +110,8 @@ module.exports = {
     overlay: overlay,
     toArray: toArray,
     show: show,
+    newType: newType,
+    sameKeys: sameKeys,
+    eachKeyVal: eachKeyVal,
+    assign: assign,
 }

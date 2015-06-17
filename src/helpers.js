@@ -1,12 +1,21 @@
+var __TC_NAME__ = '-tcName'
+
+function format(fmt, data) {
+    var re = /\{([^{}]+)\}/g
+    return fmt.replace(re, function(match, key) {
+        return key in data
+            ? data[key]
+            : ''
+    })
+}
+
 function zipWith(f, xs, ys) {
     var xys = []
     if (xs.length !== ys.length) {
-        throw new Error(
-            "can't zip over different sized lists: "
-            + show(xs)
-            + " and "
-            + show(ys)
-        )
+        throw new Error(format(
+            "can't zip over different sized lists: {xs} and {ys}",
+            {xs: xs, ys: ys}
+        ))
     }
     for (var i = 0, n = xs.length; i < n; i++) {
         xys.push(f(xs[i], ys[i]))
@@ -30,11 +39,6 @@ function call(f, x) {
     return f(x)
 }
 
-function sameKeys(x, y) {
-    return Object.keys(x).sort().join('') ===
-           Object.keys(y).sort().join('')
-}
-
 function safePredicate(f) {
     return function() {
         try {
@@ -43,26 +47,6 @@ function safePredicate(f) {
             return false
         }
     }
-}
-
-function throwOnFalse(f) {
-    return function() {
-        var x = f.apply(this, arguments)
-        if (x === false) {
-            throw new Error("Oops!")
-        }
-        return x
-    }
-}
-
-function overlay(o, k, v) {
-    var o2 = Object.create(o)
-    Object.defineProperty(o2, k, { value: v })
-    return Object.freeze(o2)
-}
-
-function toArray(xs) {
-    return Array.prototype.slice.call(xs)
 }
 
 function show(x) {
@@ -86,32 +70,29 @@ function show(x) {
 
 function basicShow(x) {
     if (typeof x === 'function') {
-        var n = x.name || x.__tcName__
-        // return  n ? ('[Function: ' + n + ']') : '[Function]'
-        return  n || '[Function]'
+        return  x.name || x[__TC_NAME__] || '[Function]'
     }
-    if (x === undefined) {
-        return '' + x
+    if (typeof x === 'string') {
+        return JSON.stringify(x)
     }
-    return JSON.stringify(x)
+    return '' + x
 }
 
 function newType(name, predicate) {
-    var f = safePredicate(predicate)
-    f.__tcName__ = name
-    return f
+    return Object.defineProperty(
+        safePredicate(predicate),
+        __TC_NAME__,
+        {value: name}
+    )
 }
 
 module.exports = {
+    format: format,
     zipWith: zipWith,
     call: call,
     safePredicate: safePredicate,
-    throwOnFalse: throwOnFalse,
-    overlay: overlay,
-    toArray: toArray,
     show: show,
     newType: newType,
-    sameKeys: sameKeys,
     eachKeyVal: eachKeyVal,
     assign: assign,
 }

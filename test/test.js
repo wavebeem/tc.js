@@ -9,27 +9,27 @@ describe("tc.js", function() {
             assert.strictEqual(TC.Number(NaN), true)
         })
     })
-    describe("TC()", function() {
-        var add = TC()
-            .Takes([TC.Number, TC.Number])
-            .Returns(TC.Number)
-            .By(function(a, b) { return a + b })
-        var divide = TC()
-            .Takes([TC.Number, TC.Nonzero])
-            .Returns(TC.Number)
-            .By(function(a, b) { return a / b })
-        var sum = TC()
-            .Takes([TC.Array(TC.Number)])
-            .Returns(TC.Number)
-            .By(function(xs) { return xs.reduce(add, 0) })
-        // var myParseInt = TC()
-        //     .Takes([TC.String, TC.Optional(TC.Natural)])
-        //     .Returns(TC.Integer)
-        //     .By(parseInt)
-        var charCount = TC()
-            .Takes([TC.String])
-            .Returns(TC.Map(null, TC.Number))
-            .By(function charCount(s) {
+    describe("TC", function() {
+        var add = TC
+            .takes([TC.Number, TC.Number])
+            .returns(TC.Number)
+            .by(function(a, b) { return a + b })
+        var divide = TC
+            .takes([TC.Number, TC.Nonzero])
+            .returns(TC.Number)
+            .by(function(a, b) { return a / b })
+        var sum = TC
+            .takes([TC.Array(TC.Number)])
+            .returns(TC.Number)
+            .by(function(xs) { return xs.reduce(add, 0) })
+        // var myParseInt = TC
+        //     .takes([TC.String, TC.Optional(TC.Natural)])
+        //     .returns(TC.Integer)
+        //     .by(parseInt)
+        var charCount = TC
+            .takes([TC.String])
+            .returns(TC.Map(null, TC.Number))
+            .by(function charCount(s) {
                 return s
                     .split('')
                     .reduce(function(obj, c) {
@@ -42,10 +42,10 @@ describe("tc.js", function() {
             age: TC.Nonzero,
             nickname: TC.Optional(null, TC.String),
         })
-        var personSummary = TC()
-            .Takes([TPerson])
-            .Returns(TC.String)
-            .By(function personSummary(p) {
+        var personSummary = TC
+            .takes([TPerson])
+            .returns(TC.String)
+            .by(function personSummary(p) {
                 return p.name
                     + (p.nickname ? ('"' + p.nickname + '"') : '')
                     + '(' + p.age + ')'
@@ -80,11 +80,11 @@ describe("tc.js", function() {
             assert.doesNotThrow(function() { charCount("a-bb-CCC-dddd") })
         })
         it("intermediate steps should be reusable", function() {
-            var fromNumber = TC().Takes([TC.Number])
-            var fromNumberToString = fromNumber.Returns(TC.String)
-            var fromNumberToNumber = fromNumber.Returns(TC.Number)
-            var toString = fromNumberToString.By(function(x) { return '' + x })
-            var negate = fromNumberToNumber.By(function(x) { return -x })
+            var fromNumber = TC.takes([TC.Number])
+            var fromNumberToString = fromNumber.returns(TC.String)
+            var fromNumberToNumber = fromNumber.returns(TC.Number)
+            var toString = fromNumberToString.by(function(x) { return '' + x })
+            var negate = fromNumberToNumber.by(function(x) { return -x })
             assert.doesNotThrow(function() { negate(4) })
             assert.doesNotThrow(function() { toString(4) })
             assert.throws(function() { negate("-x") })
